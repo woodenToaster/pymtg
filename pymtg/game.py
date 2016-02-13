@@ -1,4 +1,8 @@
+import pygame
+
 from card import Deck
+
+from os.path import join as jp
 
 
 class Player():
@@ -12,7 +16,8 @@ class Player():
     def draw_card(self):
         self.hand.append(self.deck.draw())
 
-if __name__ == '__main__':
+
+class Game():
     phases = {
         1: 'upkeep',
         2: 'draw',
@@ -25,6 +30,42 @@ if __name__ == '__main__':
         0: 'end'
     }
 
+    player_indicator_fmt = "Player[{}]      Phase[{}]       Life[{}]"
+
+    def __init__(self, player1, player2):
+        self.player_1 = player1
+        self.player_2 = player2
+        self.current_phase = 1
+        self.active_player = 1
+
+    def next_phase(self):
+        self.current_phase += 1
+        self.current_phase %= 9
+
+        if self.current_phase == 0:
+            if self.active_player == self.player_1:
+                self.active_player = self.player_2
+            else:
+                self.active_player = self.player_1
+
+    def start_game(self):
+        # Main game loop
+        while True:
+            print(Game.player_indicator_fmt.format(
+                self.active_player.name, Game.phases[self.current_phase], self.active_player.life)
+            )
+
+            if Game.phases[self.current_phase] == 'upkeep':
+                pass
+
+            elif Game.phases[self.current_phase] == 'draw':
+                self.active_player.draw_card()
+                print("{} drew \n{}".format(
+                    self.active_player.name, self.active_player.hand[len(self.active_player.hand) - 1])
+                )
+
+
+if __name__ == '__main__':
     deck1 = Deck('white_weenie')
     deck2 = Deck('white_weenie')
 
@@ -33,34 +74,29 @@ if __name__ == '__main__':
     player_1.deck.shuffle()
     player_2.deck.shuffle()
 
-    player_indicator_fmt = "Player[{}]      Phase[{}]       Life[{}]"
+    game = Game(player_1, player_2)
 
-    active_player = player_1
-    current_phase = 0
+    img_path = 'data/img/origins/cards/Cards'
+    anointer = 'anointer_of_champions'
+    img_ext = '.jpg'
 
-    # Main game loop
-    while True:
-        current_phase += 1
-        current_phase %= 9
+    pygame.init()
+    size = width, height = (1600, 900)
+    black = (0, 0, 0)
+    screen = pygame.display.set_mode(size)
+    screen.fill(black)
+    running = True
 
-        print(player_indicator_fmt.format(
-            active_player.name, phases[current_phase], active_player.life)
-        )
+    anointer_img = pygame.image.load(jp(img_path, anointer + img_ext)).convert()
+    anointer_img = pygame.transform.scale(anointer_img, (120, 200))
+    anointer_rect = anointer_img.get_rect()
 
-        if phases[current_phase] == 'upkeep':
-            pass
+    screen.blit(anointer_img, anointer_rect)
+    pygame.display.flip()
 
-        elif phases[current_phase] == 'draw':
-            # Draw phase
-            active_player.draw_card()
-            print("{} drew \n{}".format(
-                active_player.name, active_player.hand[len(active_player.hand) - 1])
-            )
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
 
-        pass_priority = input()
-
-        if current_phase == 0:
-            if active_player == player_1:
-                active_player = player_2
-            else:
-                active_player = player_1
+    pygame.quit()

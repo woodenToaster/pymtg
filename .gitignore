@@ -1,0 +1,4 @@
+pymtg/__pycache__/
+pymtg/data/img/
+
+*.pyc
