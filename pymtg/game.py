@@ -37,6 +37,7 @@ class Game():
         self.player_2 = player2
         self.current_phase = 1
         self.active_player = 1
+        self.starting_hand_size = 7
 
     def next_phase(self):
         self.current_phase += 1
@@ -49,21 +50,26 @@ class Game():
                 self.active_player = self.player_1
 
     def start_game(self):
-        # Main game loop
-        while True:
-            print(Game.player_indicator_fmt.format(
-                self.active_player.name, Game.phases[self.current_phase], self.active_player.life)
-            )
+        for i in range(self.starting_hand_size):
+            self.player_1.draw_card()
+            self.player_2.draw_card()
 
-            if Game.phases[self.current_phase] == 'upkeep':
-                pass
+        # while True:
+        #     print(Game.player_indicator_fmt.format(
+        #         self.active_player.name, Game.phases[self.current_phase], self.active_player.life)
+        #     )
 
-            elif Game.phases[self.current_phase] == 'draw':
-                self.active_player.draw_card()
-                print("{} drew \n{}".format(
-                    self.active_player.name, self.active_player.hand[len(self.active_player.hand) - 1])
-                )
+        #     if Game.phases[self.current_phase] == 'upkeep':
+        #         pass
 
+        #     elif Game.phases[self.current_phase] == 'draw':
+        #         self.active_player.draw_card()
+        #         print("{} drew \n{}".format(
+        #             self.active_player.name, self.active_player.hand[len(self.active_player.hand) - 1])
+        #         )
+
+BLACK = (0, 0, 0)
+MAGENTA = (255, 0, 255)
 
 if __name__ == '__main__':
     deck1 = Deck('white_weenie')
@@ -81,17 +87,37 @@ if __name__ == '__main__':
     img_ext = '.jpg'
 
     pygame.init()
-    size = width, height = (1600, 900)
-    black = (0, 0, 0)
-    screen = pygame.display.set_mode(size)
-    screen.fill(black)
+    display_size = display_width, display_height = (1600, 900)
+    screen = pygame.display.set_mode(display_size)
+    screen.fill(BLACK)
     running = True
 
-    anointer_img = pygame.image.load(jp(img_path, anointer + img_ext)).convert()
-    anointer_img = pygame.transform.scale(anointer_img, (120, 200))
-    anointer_rect = anointer_img.get_rect()
+    hand_surface_width = 0.7 * display_width
+    card_width_in_hand = int(hand_surface_width / 7)
 
-    screen.blit(anointer_img, anointer_rect)
+    hand_surface_height = 0.2 * display_height
+    card_height_in_hand = int(hand_surface_height)
+
+    hand_surface = pygame.Surface((hand_surface_width, hand_surface_height))
+    hand_surface.fill(MAGENTA)
+
+    hand_surface_location = (
+        (display_width - hand_surface_width) / 2.0,
+        display_height - hand_surface_height
+    )
+    screen.blit(hand_surface, hand_surface_location)
+
+    anointer_img = pygame.image.load(jp(img_path, anointer + img_ext)).convert()
+    anointer_img = pygame.transform.scale(
+        anointer_img, (card_width_in_hand, card_height_in_hand)
+    )
+
+    for i in range(7):
+        screen.blit(
+            anointer_img,
+            (hand_surface_location[0] + i * card_width_in_hand, hand_surface_location[1])
+        )
+
     pygame.display.flip()
 
     while running:
