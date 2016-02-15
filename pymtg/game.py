@@ -1,8 +1,7 @@
 import pygame
 
-from card import Deck
-
-from os.path import join as jp
+from card import Deck, HandSurface
+from colors import COLORS
 
 
 class Player():
@@ -68,61 +67,69 @@ class Game():
         #             self.active_player.name, self.active_player.hand[len(self.active_player.hand) - 1])
         #         )
 
-BLACK = (0, 0, 0)
-MAGENTA = (255, 0, 255)
 
-if __name__ == '__main__':
-    deck1 = Deck('white_weenie')
-    deck2 = Deck('white_weenie')
+def init_game(p1, p1_deck, p2, p2_deck):
+    deck1 = Deck(p1_deck)
+    deck2 = Deck(p2_deck)
 
-    player_1 = Player(deck1, 'Chris')
-    player_2 = Player(deck2, 'Joe')
+    player_1 = Player(deck1, p1)
+    player_2 = Player(deck2, p2)
     player_1.deck.shuffle()
     player_2.deck.shuffle()
 
-    game = Game(player_1, player_2)
+    return Game(player_1, player_2)
 
-    img_path = 'data/img/origins/cards/Cards'
-    anointer = 'anointer_of_champions'
-    img_ext = '.jpg'
+
+def init_display(width, height):
+    display_size = display_width, display_height = (width, height)
+    screen = pygame.display.set_mode(display_size)
+    screen.fill(COLORS['black'])
+
+    return screen
+
+if __name__ == '__main__':
+
+    game = init_game('Chris', 'white_weenie', 'Joe', 'white_weenie')
 
     pygame.init()
-    display_size = display_width, display_height = (1600, 900)
-    screen = pygame.display.set_mode(display_size)
-    screen.fill(BLACK)
-    running = True
-
-    hand_surface_width = 0.7 * display_width
-    card_width_in_hand = int(hand_surface_width / 7)
-
-    hand_surface_height = 0.2 * display_height
-    card_height_in_hand = int(hand_surface_height)
-
-    hand_surface = pygame.Surface((hand_surface_width, hand_surface_height))
-    hand_surface.fill(MAGENTA)
-
-    hand_surface_location = (
-        (display_width - hand_surface_width) / 2.0,
-        display_height - hand_surface_height
+    screen = init_display(1600, 900)
+    hand_surface = HandSurface(screen.get_width(), screen.get_height())
+    large_card_surface = pygame.Surface(
+        (hand_surface.card_width * 3, hand_surface.card_height * 3)
     )
-    screen.blit(hand_surface, hand_surface_location)
-
-    anointer_img = pygame.image.load(jp(img_path, anointer + img_ext)).convert()
-    anointer_img = pygame.transform.scale(
-        anointer_img, (card_width_in_hand, card_height_in_hand)
+    large_card_dest = pygame.Rect(
+        ((screen.get_width() // 2) - ((hand_surface.card_width * 3) // 2), 0),
+        (large_card_surface.get_width(), large_card_surface.get_height())
     )
 
-    for i in range(7):
-        screen.blit(
-            anointer_img,
-            (hand_surface_location[0] + i * card_width_in_hand, hand_surface_location[1])
-        )
+    game.start_game()
 
+    hand_surface.init_images(game.player_1.hand)
+    for img, dest in hand_surface.card_img_data:
+        screen.blit(img, dest)
     pygame.display.flip()
 
+    running = True
     while running:
+        dirty = []
+
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-
+        for i in range(len(hand_surface.card_img_data)):
+            img, dest = hand_surface.card_img_data[i]
+            if hand_surface.mouse_is_over(i):
+                print("Over card {}".format(i))
+                pressed = pygame.mouse.get_pressed()
+                if pressed[0] and pressed[2]:
+                    pygame.transform.scale(img, (img.get_width() * 3, img.get_height() * 3), large_card_surface)
+                    screen.blit(large_card_surface, large_card_dest)
+                    dirty.append(large_card_surface.get_rect(topleft=(large_card_dest.left, large_card_dest.top)))
+                if not pressed[0] and not pressed[2]:
+                    large_card_surface.fill((COLORS['black']))
+                    screen.blit(large_card_surface, large_card_dest)
+                    dirty.append(large_card_surface.get_rect(topleft=(large_card_dest.left, large_card_dest.top)))
+        if dirty:
+            pygame.display.update(dirty)
+        pygame.time.wait(50)
     pygame.quit()
